@@ -1,6 +1,6 @@
 # SplitCode — Split a Large JavaScript File Into Smaller Dependency-Ordered Files
 
-[![npm version](https://img.shields.io/npm/v/splitcode)](https://www.npmjs.com/package/splitcode)
+[![npm (coming soon)](https://img.shields.io/badge/npm-coming_soon-blue)](https://www.npmjs.com/package/splitcode)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/unn-Known1/splitcode/blob/master/LICENSE)
 
 Split one giant `app.js` into clean, load-ordered modules using pure static

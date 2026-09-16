@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SplitCode — Split a Large JavaScript File Into Smaller Dependency-Ordered Files</title>
 <meta name="description" content="SplitCode splits one giant app.js into clean, load-ordered modules with pure static analysis. No bundler, no LLM. npx splitcode app.js ./out">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1120">
+<meta property="og:title" content="SplitCode — Split a Large JavaScript File Into Smaller Files">
+<meta property="og:description" content="Pure static analysis. Dependency-ordered output. Drop-in loader. No bundler, no LLM.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://unn-Known1.github.io/splitcode/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SplitCode — Split a Large JavaScript File Into Smaller Files">
+<meta name="twitter:description" content="Pure static analysis. Dependency-ordered output. Drop-in loader. No bundler, no LLM.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Cpath d='M11 9l-5 7 5 7M21 9l5 7-5 7' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>
+/* pre-paint theme: system default unless the user toggled before (avoids light-flash) */
+try{(function(){var t=null;try{t=localStorage.getItem('splitcode-theme');}catch(e){}
+document.documentElement.setAttribute('data-theme',t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));})();}catch(e){}
+</script>
+<noscript><style>.card{opacity:1!important;transform:none!important}</style></noscript>
 <style>
 :root{
   --bg:#ffffff; --bg-soft:#f6f8fa; --card:#ffffff; --ink:#0f172a; --muted:#5b6472;
@@ -23,7 +39,8 @@ body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Robot
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 .wrap{max-width:1024px;margin:0 auto;padding:0 20px}
-nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);
+nav{position:sticky;top:0;z-index:10;background:var(--bg);
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 nav .wrap{display:flex;align-items:center;gap:16px;height:60px}
 .logo{font-weight:800;font-size:1.15rem;letter-spacing:-.02em}
@@ -111,15 +128,16 @@ footer a{color:var(--muted)}
   <h1>Split one giant <span>app.js</span> into clean, load-ordered modules.</h1>
   <p>Pure static analysis — no bundler, no LLM, no config. Grouped by real dependencies, ordered so nothing runs too early, with a drop-in loader so your pages keep working.</p>
   <div><span class="install"><span class="dollar">$</span>&nbsp;<span id="installCmd">npx splitcode app.js ./split-out</span>&nbsp;<button class="copyBtn" data-copy="npx splitcode app.js ./split-out">copy</button></span></div>
+  <p style="font-size:.85rem;margin-top:12px">● npm release pending — <a href="#usage">from-source instructions</a> work today.</p>
   <div class="cta">
     <a class="btn primary" href="https://github.com/unn-Known1/splitcode">★ Star on GitHub</a>
-    <a class="btn ghost" href="https://www.npmjs.com/package/splitcode">npm package</a>
+    <a class="btn ghost" href="https://www.npmjs.com/package/splitcode">npm (coming soon)</a>
   </div>
   <div class="stats">
     <div class="stat"><b><span class="count" data-to="671">0</span></b><small>statements in → out</small></div>
     <div class="stat"><b><span class="count" data-to="18">0</span></b><small>focused files</small></div>
     <div class="stat"><b><span class="count" data-to="0">0</span></b><small>ordering violations</small></div>
-    <div class="stat"><b><span class="count" data-to="3">0</span></b><small>files in tarball</small></div>
+    <div class="stat"><b><span class="count" data-to="4">0</span></b><small>files in tarball</small></div>
   </div>
 </header>
 
@@ -227,7 +245,7 @@ footer a{color:var(--muted)}
   tio.observe(term);
   // ---- usage tabs ----
   var tabs={
-    npx:'$ npx splitcode app.js ./split-out',
+    npx:'$ npx splitcode app.js ./split-out\n# flags (all optional, defaults shown):\n# [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]',
     global:'$ npm install -g splitcode\n$ splitcode app.js ./split-out',
     source:'$ npm install acorn\n$ node split-js.js app.js ./split-out',
     manifest:'{\n  "order": [{ "file": "auth-token.js",\n              "declares": ["authToken", "init", …],\n              "statementCount": 51 }, …],\n  "loader": "app.js",\n  "cycleFallback": false,\n  "verified": "syntax-only"\n}'
