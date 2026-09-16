@@ -125,7 +125,10 @@ if (lang === 'js') {
 // ---------- Backend ----------
 const analysis = analyzeRecords(records, opts);
 const clusters = clusterRecords(records, analysis.clusterEdges, opts);
-const { order, warnedCycle } = orderClusters(clusters, analysis.orderEdges);
+const ordered = orderClusters(clusters, analysis.orderEdges);
+const order = ordered.order;
+const warnedCycle = ordered.warnedCycle;
+const finalClusters = ordered.clusters;
 
 // ---------- Write output ----------
 // Clear stale tool output first (only files this tool owns).
@@ -148,9 +151,9 @@ if (loaderName) usedNames.add(loaderName);
 const manifest = [];
 {
   const byIdx = new Map(records.map(s => [s.idx, s]));
-  const fileNames = nameClusters(order.map(ci => clusters[ci]), records, analysis.usageCount, usedNames, PART_EXT[lang]);
+  const fileNames = nameClusters(order.map(ci => finalClusters[ci]), records, analysis.usageCount, usedNames, PART_EXT[lang]);
   order.forEach((ci, k) => {
-    const cl = clusters[ci].slice().sort((a, b) => a - b);
+    const cl = finalClusters[ci].slice().sort((a, b) => a - b);
     const fileName = fileNames[k];
     const code = cl.map(i => byIdx.get(i).getCode()).join(lang === 'py' ? '\n\n\n' : '\n\n');
     const decls = cl.flatMap(i => byIdx.get(i).declaredNames);
@@ -176,6 +179,7 @@ fs.writeFileSync(
     loader: loaderName, // single entry point; consumers keep loading this file
     hubNamesSuppressed: [...analysis.hubNames],
     cycleFallback: warnedCycle,
+    sccMerged: ordered.sccMerged,
     parserMode,
     duplicateDeclarations: analysis.duplicateDeclarations,
     notes: langNotes || {},

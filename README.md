@@ -88,8 +88,11 @@ will invoke it automatically when files get large. Agent-readable docs:
 5. **Topologically order** the files on immediate dependencies only.
    Function declarations are hoisted, so they move freely; anything that
    executes immediately (a bare call, `const x = f()`) keeps its relative
-   position. On a genuine cycle the tool warns and falls back to original
-   order for those clusters instead of guessing.
+   position. Grouping ignores edge direction, so a cluster assignment can
+   theoretically demand an impossible order (A before B before A) — the
+   tool condenses such circular groups (Tarjan SCC) into single files
+   first, so the emitted order is *always* satisfiable. Merges are logged
+   and recorded (`sccMerged`); files get bigger, never wrong.
 6. **Write the outputs** (see below): cluster files, `manifest.json`,
    `script-tags.html`, and the `app.js` bootstrap loader.
 
@@ -152,7 +155,8 @@ diffed — identical (modulo independent-print interleaving, see limitations).
   | `order` | Files with `declares` + `statementCount`, in load order |
   | `loader` | Entry-point file name (`null` with `--no-loader`) |
   | `hubNamesSuppressed` | Shared-everywhere globals excluded from grouping |
-  | `cycleFallback` | Whether any cluster group fell back to original order |
+  | `cycleFallback` | Safety net only (condensation makes it unreachable); whether original-order fallback was used |
+  | `sccMerged` | Circular-dependency groups merged into single files to guarantee order |
   | `parserMode` | `script`, or `module` if the ESM fallback parsed it |
   | `duplicateDeclarations` | Repeated top-level names (refs use the first) |
   | `verified` | Always `"syntax-only"` — what was (and wasn't) proven |
