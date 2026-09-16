@@ -10,7 +10,7 @@
  * Python: exec bootstrap preserving shared globals).
  *
  * Usage:
- *   node split-js.js <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader <name> | --no-loader] [--lang js|ts|html|py]
+ *   node split-js.js <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader <name> | --no-loader] [--lang js|ts|html|py] [--check]
  */
 
 const fs = require('fs');
@@ -21,7 +21,7 @@ const { analyzeJS } = require('./lib/frontend-js');
 // ---------- CLI ----------
 const [, , inputFile, outDirArg, ...rest] = process.argv;
 if (!inputFile || !outDirArg) {
-  console.error('Usage: node split-js.js <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader <name> | --no-loader] [--lang js|ts|html|py]');
+  console.error('Usage: node split-js.js <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader <name> | --no-loader] [--lang js|ts|html|py] [--check]');
   process.exit(1);
 }
 function fail(msg) {
@@ -38,7 +38,7 @@ function fail(msg) {
       `Good news: upgrading is quick (https://nodejs.org), and everything else is ready to go.`);
   }
 }
-const opts = { hubRatio: 0.12, minChars: 400, loader: undefined, lang: undefined };
+const opts = { hubRatio: 0.12, minChars: 400, loader: undefined, lang: undefined, check: false };
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--hub-ratio') {
     const raw = rest[++i];
@@ -56,6 +56,8 @@ for (let i = 0; i < rest.length; i++) {
     }
   } else if (rest[i] === '--no-loader') {
     opts.loader = null;
+  } else if (rest[i] === '--check') {
+    opts.check = true;
   } else if (rest[i] === '--loader') {
     const raw = rest[++i];
     if (raw === undefined) fail('Missing value for --loader (expected a file name).');
@@ -70,11 +72,10 @@ for (let i = 0; i < rest.length; i++) {
     }
     opts.lang = raw;
   } else {
-    fail(`Unknown option ${JSON.stringify(rest[i])}. Usage: node split-js.js <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader <name> | --no-loader] [--lang js|ts|html|py]`);
+    fail(`Unknown option ${JSON.stringify(rest[i])}. Usage: node split-js.js <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader <name> | --no-loader] [--lang js|ts|html|py] [--check]`);
   }
 }
 const outDir = path.resolve(outDirArg);
-fs.mkdirSync(outDir, { recursive: true });
 
 const source = fs.readFileSync(inputFile, 'utf8');
 const inputBase = path.basename(inputFile);
@@ -152,6 +153,22 @@ if (lang === 'js') {
   records = r.records; parserMode = r.parserMode; langNotes = r.notes;
 }
 
+// ---------- Preflight: warn about risky patterns BEFORE splitting ----------
+{
+  const { preflight } = require('./lib/preflight');
+  const findings = preflight(source, lang, inputFile);
+  const warns = findings.filter(f => f.level === 'warn');
+  const notes = findings.filter(f => f.level === 'note');
+  if (opts.check || findings.length) {
+    console.log(`Preflight (${lang}): ${warns.length} warning(s), ${notes.length} note(s)` +
+      (findings.length ? '' : ' — clean, no known risk patterns.'));
+    for (const f of findings) {
+      console.log(`${f.level === 'warn' ? '⚠' : '•'} [${f.code}] ${f.message}`);
+    }
+  }
+  if (opts.check) process.exit(warns.length ? 2 : 0); // 2 = risky, 0 = clean
+}
+
 // ---------- Backend ----------
 const analysis = analyzeRecords(records, opts);
 const clusters = clusterRecords(records, analysis.clusterEdges, opts);
@@ -162,6 +179,7 @@ const finalClusters = ordered.clusters;
 
 // ---------- Write output ----------
 // Clear stale tool output first (only files this tool owns).
+fs.mkdirSync(outDir, { recursive: true });
 {
   const owned = new Set(['manifest.json', 'script-tags.html']);
   const exts = ['.js', '.ts', '.py'];

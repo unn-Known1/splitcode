@@ -110,6 +110,19 @@ splitcode <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] 
 | `--loader app.js` | on | Writes a bootstrap loader named `app.js` into `outDir`. Keep loading just that ONE file — it pulls in the split files in order. Load it with a plain `<script src>`, not async/defer. Rename with `--loader bootstrap.js`; a cluster that would collide gets suffixed (`app-2.js`). |
 | `--no-loader` | — | Disables the loader; paste `script-tags.html` into your page instead (JS/TS/HTML; Python has no tags file). |
 | `--lang js\|ts\|html\|py` | auto (extension) | Force the frontend for extension-less or oddly-named inputs. |
+| `--check` | — | Preflight only: scan for risk patterns, print warnings, write nothing. Exit 0 = clean, 2 = risky. |
+
+## Preflight (automatic, per file type)
+
+Every run scans for constructs the splitter handles poorly and warns
+*before* writing anything. `--check` runs only the scan:
+
+| Lang | ⚠ Warns | • Notes |
+|---|---|---|
+| JS | `eval`, `new Function`, dynamic `import()`, `importScripts`, `X.prototype.y =`, `Object.defineProperty`, unparseable file | getters/setters, top-level `await` |
+| TS | same as JS (via compiler API) | same as JS |
+| HTML | `<script>` inside `<template>` (would be ACTIVATED), | `type="module"` left in place |
+| Python | `eval`/`exec` strings, `__import__`, relative imports (BREAK in parts), `from __future__` (must stay first) | `import *`, `__file__` (points at bootstrap) |
 
 ## Languages
 

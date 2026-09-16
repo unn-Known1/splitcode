@@ -22,7 +22,11 @@ node split-js.js app.js ./split-out         # from source (needs: npm install)
   (override: `--lang js|ts|html|py`).
 - Python needs `python3` on PATH. TypeScript uses `typescript@5`.
 - Optional flags (defaults shown):
-  `[--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]`
+  `[--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]
+   [--lang js|ts|html|py] [--check]`
+- `--check`: preflight scan only (no output). Exit 0 = clean, 2 = risky.
+  Auto-runs before every split: eval/new Function/dynamic import,
+  prototype writes, template-nested scripts, relative Python imports, etc.
 
 ## What you get in outDir
 

@@ -278,7 +278,7 @@ footer a{color:var(--muted)}
   tio.observe(term);
   // ---- usage tabs ----
   var tabs={
-    npx:'$ npx splitcode app.js ./split-out\n# also: app.ts, page.html, app.py (auto-detected)\n# flags (all optional, defaults shown):\n# [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader] [--lang js|ts|html|py]',
+    npx:'$ npx splitcode app.js ./split-out\n# also: app.ts, page.html, app.py (auto-detected)\n# flags (all optional, defaults shown):\n# [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader] [--lang js|ts|html|py] [--check]',
     global:'$ npm install -g splitcode\n$ splitcode app.js ./split-out',
     source:'$ npm install acorn\n$ node split-js.js app.js ./split-out',
     manifest:'{\n  "order": [{ "file": "auth-token.js",\n              "declares": ["authToken", "init", …],\n              "statementCount": 51 }, …],\n  "loader": "app.js",\n  "cycleFallback": false,\n  "verified": "syntax-only"\n}'
