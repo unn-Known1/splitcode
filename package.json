@@ -1,6 +1,6 @@
 {
   "name": "splitcode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SplitCode — split a large JavaScript file into smaller dependency-ordered files with pure static analysis. No bundler, drop-in loader.",
   "bin": {
     "splitcode": "split-js.js"
