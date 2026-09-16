@@ -15,6 +15,15 @@
 <meta name="twitter:title" content="SplitCode — Split a Large JavaScript File Into Smaller Files">
 <meta name="twitter:description" content="Pure static analysis. Dependency-ordered output. Drop-in loader. No bundler, no LLM.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Cpath d='M11 9l-5 7 5 7M21 9l5 7-5 7' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication",
+"name":"SplitCode","applicationCategory":"DeveloperApplication",
+"operatingSystem":"Any (Node.js)",
+"description":"Split large JS, TS, HTML or Python files into dependency-ordered pieces with pure static analysis.",
+"url":"https://unn-Known1.github.io/splitcode/",
+"author":{"@type":"Person","name":"unn-Known1","url":"https://github.com/unn-Known1"},
+"license":"https://github.com/unn-Known1/splitcode/blob/master/LICENSE"}
+</script>
 <script>
 /* pre-paint theme: system default unless the user toggled before (avoids light-flash) */
 try{(function(){var t=null;try{t=localStorage.getItem('splitcode-theme');}catch(e){}
@@ -119,6 +128,7 @@ footer a{color:var(--muted)}
   <a class="nl" href="#features">Features</a>
   <a class="nl" href="#demo">Demo</a>
   <a class="nl" href="#usage">Usage</a>
+  <a class="nl" href="#agents">AI Agents</a>
   <a class="nl" href="https://github.com/unn-Known1/splitcode">GitHub</a>
   <button id="themeBtn" title="Toggle light / dark">◐ Theme</button>
 </div></nav>
@@ -179,12 +189,34 @@ footer a{color:var(--muted)}
     <tr><td>Refactoring means manual surgery</td><td class="good">One command, reproducible</td></tr>
   </table>
 </section>
+
+<section id="agents">
+  <h2>Stop feeding 500KB files to your agent</h2>
+  <p class="sub">Every read of a 460KB file costs ~115K tokens. SplitCode runs blind — one deterministic command, zero context spent — then your agent plans from a ~500-token manifest and edits one small file per task. Up to ~85% fewer tokens per edit.</p>
+  <div class="grid">
+    <div class="card"><div class="ico">1️⃣</div><h3>Split without reading</h3><p>Agent runs one command. Same input always gives same output — deterministic, no LLM variance, safe to run blind.</p></div>
+    <div class="card"><div class="ico">2️⃣</div><h3>Plan from JSON</h3><p><code>manifest.json</code> lists files, declarations, hubs and load order — a machine-readable task plan, no code reading required.</p></div>
+    <div class="card"><div class="ico">3️⃣</div><h3>Edit small, test always</h3><p>Work file-by-file, never reorder <code>order</code>, rerun tests after each change. Syntax is proven; behavior is yours to verify.</p></div>
+  </div>
+  <br>
+  <div class="codeblock"><button class="copyBtn" id="promptCopy">copy</button><pre id="promptBody">You are refactoring a large file. Do NOT read it whole.
+1. Run: npx splitcode app.js ./split-out
+   (or from source: node split-js.js app.js ./split-out)
+2. Read ./split-out/manifest.json — `order` is the load order,
+   `declares` tells you what lives where, `hubNamesSuppressed`
+   is shared state. Plan your edits from this file alone.
+3. Open only the files you must change. Never reorder `order`,
+   never rename the loader. Rerun the app's tests after every edit.
+4. The manifest says "verified": "syntax-only" — that proves
+   syntax, NOT behavior. You own the smoke test.</pre></div>
+</section>
 </div>
 
 <footer>
   SplitCode by <a href="https://github.com/unn-Known1">unn-Known1</a> · MIT ·
   <a href="https://github.com/unn-Known1/splitcode">GitHub</a> ·
-  <a href="https://www.npmjs.com/package/splitcode">npm</a>
+  <a href="https://www.npmjs.com/package/splitcode">npm</a> ·
+  <a href="./llms.txt">llms.txt</a>
 </footer>
 
 <script>
@@ -258,6 +290,9 @@ footer a{color:var(--muted)}
   copy.onclick=function(){navigator.clipboard.writeText(tabs[cur2]);copy.textContent='copied!';
     setTimeout(function(){copy.textContent='copy';},1200);};
   show('npx');
+  var pCopy=document.getElementById('promptCopy');
+  if(pCopy){pCopy.onclick=function(){navigator.clipboard.writeText(document.getElementById('promptBody').innerText);pCopy.textContent='copied!';
+    setTimeout(function(){pCopy.textContent='copy';},1200);};}
 })();
 </script>
 </body>

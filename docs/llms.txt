@@ -1,0 +1,69 @@
+# SplitCode
+
+> Split large JS, TS, HTML or Python files into smaller dependency-ordered
+> files with pure static analysis. No bundler, no LLM, no config.
+> For AI agents: run ONE command blind (zero context), plan from
+> manifest.json, edit file-by-file, then test. Up to ~85% fewer tokens
+> per edit vs reading the whole file.
+
+- Site: https://unn-Known1.github.io/splitcode/
+- Repo: https://github.com/unn-Known1/splitcode
+- npm: https://www.npmjs.com/package/splitcode (release pending; use source until then)
+- License: MIT by unn-Known1 (ptelgm.yt@gmail.com)
+
+## Install / run
+
+```bash
+npx splitcode app.js ./split-out            # once published
+node split-js.js app.js ./split-out         # from source (needs: npm install)
+```
+
+- Dispatch by extension: `.js/.mjs/.cjs` `.ts/.tsx` `.html/.htm` `.py`
+  (override: `--lang js|ts|html|py`).
+- Python needs `python3` on PATH. TypeScript uses `typescript@5`.
+- Optional flags (defaults shown):
+  `[--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]`
+
+## What you get in outDir
+
+- Cluster files (kebab-case of most-used declaration; `// Declares:` header).
+- Loader (default `app.js`): pages keep loading just it; it pulls in parts
+  in order. Load with plain `<script src>`, never async/defer.
+  Python gets `app.py` bootstrap (`exec` in shared globals); HTML gets a
+  rewritten page with the loader tag at the first inline block.
+- `manifest.json`: `{order[{file, declares, statementCount}], language,
+  loader, hubNamesSuppressed, cycleFallback, parserMode,
+  duplicateDeclarations, notes, verified: "syntax-only"}`.
+- `script-tags.html` (JS/TS/HTML only): paste-in alternative to the loader.
+
+## How it decides (so you trust it correctly)
+
+- Immediate refs (run the instant a statement runs: IIFEs, Promise
+  executors, known-sync callbacks like map/forEach, decorators, defaults)
+  enforce load order. Deferred callback bodies don't.
+- Type-position refs (TS types) cluster but never order (erased at runtime).
+- Hub globals used everywhere are excluded from grouping.
+- Order is enforced ONLY along dependency edges: side-effecting statements
+  with no shared names may reorder across files.
+
+## Agent workflow (copy-paste)
+
+```text
+You are refactoring a large file. Do NOT read it whole.
+1. Run: npx splitcode app.js ./split-out
+2. Read ./split-out/manifest.json — `order` is the load order,
+   `declares` tells you what lives where, `hubNamesSuppressed`
+   is shared state. Plan your edits from this file alone.
+3. Open only the files you must change. Never reorder `order`,
+   never rename the loader. Rerun the app's tests after every edit.
+4. The manifest says "verified": "syntax-only" — that proves
+   syntax, NOT behavior. You own the smoke test.
+```
+
+## Limits an agent must respect
+
+- Unknown-receiver callbacks default to deferred (may miss an edge, no warning).
+- Dynamic keys (`window[x] = ...`) untracked. Duplicates resolve to first.
+- `__file__` in Python parts points at the bootstrap, not the original.
+- An external `<script src>` between HTML inline blocks can't be ordered.
+- Chrome may block document.write-injected scripts on very slow (2G) links.
