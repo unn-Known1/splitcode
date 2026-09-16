@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * SplitJS (split-js.js) — split a large JavaScript file into multiple
+ * SplitCode (split-js.js) — split a large JavaScript file into multiple
  * dependency-ordered files. Purely mechanical JS "module splitter".
  *
  * Given one big non-module JS file (plain <script>, no import/export),

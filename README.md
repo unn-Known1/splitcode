@@ -1,7 +1,7 @@
-# SplitJS — Split a Large JavaScript File Into Smaller Dependency-Ordered Files
+# SplitCode — Split a Large JavaScript File Into Smaller Dependency-Ordered Files
 
 Split one giant `app.js` into clean, load-ordered modules using pure static
-analysis — no bundler, no LLM, no config. SplitJS parses your JavaScript,
+analysis — no bundler, no LLM, no config. SplitCode parses your JavaScript,
 finds real dependencies between top-level statements, groups coupled code
 together, and emits a **drop-in bootstrap loader**, so your existing
 `<script>` tags keep working unchanged.
@@ -10,7 +10,7 @@ together, and emits a **drop-in bootstrap loader**, so your existing
 > file, refactor monolithic script, js code splitting without bundler,
 > legacy javascript modularization, script dependency ordering.
 
-## Why SplitJS?
+## Why SplitCode?
 
 - 📦 **Break up monolithic scripts** — turn a 500KB `app.js` into focused,
   reviewable files grouped by what actually depends on what.

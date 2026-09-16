@@ -1,4 +1,23 @@
 {
+  "name": "splitcode",
+  "version": "0.1.0",
+  "description": "SplitCode — split a large JavaScript file into smaller dependency-ordered files with pure static analysis. No bundler, drop-in loader.",
+  "bin": {
+    "splitcode": "split-js.js"
+  },
+  "files": [
+    "split-js.js",
+    "README.md"
+  ],
+  "keywords": [
+    "javascript",
+    "split",
+    "code-splitting",
+    "static-analysis",
+    "refactoring",
+    "modularity"
+  ],
+  "license": "MIT",
   "dependencies": {
     "acorn": "^8.18.0"
   }
