@@ -1,5 +1,8 @@
 # SplitCode — Split a Large JavaScript File Into Smaller Dependency-Ordered Files
 
+[![npm version](https://img.shields.io/npm/v/splitcode)](https://www.npmjs.com/package/splitcode)
+[![license: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/unn-Known1/splitcode/blob/master/LICENSE)
+
 Split one giant `app.js` into clean, load-ordered modules using pure static
 analysis — no bundler, no LLM, no config. SplitCode parses your JavaScript,
 finds real dependencies between top-level statements, groups coupled code
@@ -23,6 +26,19 @@ together, and emits a **drop-in bootstrap loader**, so your existing
   and parser mode, so you see exactly how cleanly your file decomposed.
 
 ## Quick start
+
+```bash
+npx splitcode app.js ./split-out
+```
+
+No install needed — `npx` fetches and runs it. Or install globally:
+
+```bash
+npm install -g splitcode
+splitcode app.js ./split-out
+```
+
+From source instead:
 
 ```bash
 npm install acorn
