@@ -2,6 +2,7 @@
 Test_sample_js/
 TEST/
 docs/
+skills/
 node_modules/
 .gitignore
 *.log

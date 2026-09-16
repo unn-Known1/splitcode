@@ -51,6 +51,20 @@ Deploy `./split-out` and keep loading `app.js` from your pages — the
 generated loader pulls in the rest in dependency order. That's the whole
 migration.
 
+## For AI agents
+
+Paste this into your project's `CLAUDE.md` / `AGENTS.md` so agents split
+before they read:
+
+> For files over ~100KB: run `npx splitcode <file> ./split-out` first, plan
+> from `./split-out/manifest.json`, edit per-file, never reorder `order`,
+> test after every change.
+
+A ready-made Claude Skill lives at `skills/splitcode/SKILL.md` — copy it
+into your project's `.claude/skills/` (or global skills dir) and agents
+will invoke it automatically when files get large. Agent-readable docs:
+`docs/llms.txt` (also served at `/llms.txt` on the site).
+
 ## How it works
 
 1. **Parse** the file with `acorn` into an AST (classic scripts; ES modules
