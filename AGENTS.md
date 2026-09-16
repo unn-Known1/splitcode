@@ -12,16 +12,21 @@ Single-file CLI, one runtime dependency (`acorn`).
 - Tarball check: `npm pack --dry-run` (must stay minimal — code + docs only)
 
 ## Before finishing any code change
-1. `node --check split-js.js`
+1. `node --check split-js.js` (and any touched `lib/*.js`).
 2. Re-run the behavioral checks: IIFE-immediate, block-scope shadowing,
    `window.X` declarations, deferred callbacks stay deferred (see README
    "Scope handling" for the cases).
 3. Full-scale check: split the sample app, confirm statement conservation
    (in == out), zero ordering violations, reassembled output passes
    `node --check`.
-4. Never modify `Test_sample_js/` fixtures (gitignored, local-only).
-5. Keep `manifest.json` fields backward-compatible; document any new field
+4. Preflight check: `node split-js.js <input> <out> --check` on a risky
+   sample per touched language — every new `warn`/`note` code must already
+   be in the README preflight table AND `docs/llms.txt`.
+5. Never modify `Test_sample_js/` fixtures (gitignored, local-only).
+6. Keep `manifest.json` fields backward-compatible; document any new field
    in README.
+7. New runtime file? `lib/` ships via the `files` whitelist — verify with
+   `npm pack --dry-run` that it lands in the tarball (and only it does).
 
 ## Webpage sync (mandatory)
 `docs/index.html` is the public GitHub Pages landing page. **Whenever the
@@ -32,6 +37,8 @@ repo evolves, update the webpage in the same change:**
 - Verified stats change (statements, file counts, violations) → update the
   hero counters AND the before/after table to match the latest real run.
 - New output files / manifest fields → update terminal replay + manifest tab.
+- New preflight warning codes → update Features grid if user-facing, and
+  `docs/llms.txt` limits section.
 - Product rename or positioning change → update title, meta description,
   footer, and README keywords block together.
 - Never let the page advertise behavior the tool doesn't have; the page's

@@ -66,6 +66,10 @@ You are refactoring a large file. Do NOT read it whole.
 
 ## Limits an agent must respect
 
+- Run `--check` first: preflight warns per file type (eval/dynamic
+  import/prototype writes, template-nested scripts, relative Python
+  imports, future imports). Exit 0 = clean, 2 = risky.
+
 - Unknown-receiver callbacks default to deferred (may miss an edge, no warning).
 - Dynamic keys (`window[x] = ...`) untracked. Duplicates resolve to first.
 - `__file__` in Python parts points at the bootstrap, not the original.
