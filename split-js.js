@@ -28,6 +28,16 @@ function fail(msg) {
   console.error(msg);
   process.exit(1);
 }
+
+// Friendly runtime gates (checked before any work, so failures read as
+// guidance, not stack traces).
+{
+  const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
+  if (nodeMajor < 16) {
+    fail(`SplitCode runs best on Node.js 16+ — you're on v${process.versions.node}. ` +
+      `Good news: upgrading is quick (https://nodejs.org), and everything else is ready to go.`);
+  }
+}
 const opts = { hubRatio: 0.12, minChars: 400, loader: undefined, lang: undefined };
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--hub-ratio') {
@@ -77,7 +87,12 @@ function detectLang() {
   if (ext === '.ts' || ext === '.mts' || ext === '.cts' || ext === '.tsx') return 'ts';
   if (ext === '.html' || ext === '.htm') return 'html';
   if (ext === '.py') return 'py';
-  fail(`Cannot detect language from ${JSON.stringify(inputFile)} — pass --lang js|ts|html|py.`);
+  fail(`SplitCode doesn't support ${JSON.stringify(ext || '(no extension)')} files yet — ` +
+    `today it splits .js, .ts, .html and .py. ` +
+    `Want your type supported? It takes 30 seconds: open a request at ` +
+    `https://github.com/unn-Known1/splitcode/issues/new ` +
+    `(tell us the extension + what the file looks like) and we'll add it. ` +
+    `In the meantime, --lang js|ts|html|py forces the closest frontend.`);
 }
 const lang = detectLang();
 
@@ -109,6 +124,15 @@ if (lang === 'js') {
   const r = analyzeJS(source);
   records = r.records; parserMode = r.parserMode; langNotes = {};
 } else if (lang === 'ts') {
+  // v6+ is the native port and no longer ships the parser API — catch that
+  // BEFORE loading the frontend, or it dies with a cryptic TypeError.
+  const tsVersion = require('typescript').version || '0.0.0';
+  const tsMajor = parseInt(tsVersion.split('.')[0], 10);
+  if (tsMajor >= 6) {
+    fail(`Nice — you're on TypeScript v${tsVersion}! One catch: v6+ is the native port and ` +
+      `doesn't ship the parser API SplitCode needs yet. Install the classic line alongside ` +
+      `(\`npm i typescript@5\`) and rerun — your code stays untouched.`);
+  }
   const { analyzeTS } = require('./lib/frontend-ts');
   const r = analyzeTS(source, inputFile);
   records = r.records; parserMode = r.parserMode; langNotes = {};
@@ -118,7 +142,13 @@ if (lang === 'js') {
   records = r.records; parserMode = r.parserMode; langNotes = r.notes;
 } else if (lang === 'py') {
   const { analyzePY } = require('./lib/frontend-py');
-  const r = analyzePY(source, inputFile);
+  let r;
+  try {
+    r = analyzePY(source, inputFile);
+  } catch (e) {
+    if (e && e.friendly) fail(e.message);
+    throw e;
+  }
   records = r.records; parserMode = r.parserMode; langNotes = r.notes;
 }
 
