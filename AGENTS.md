@@ -41,3 +41,17 @@ repo evolves, update the webpage in the same change:**
 - Small, surgical edits; no drive-by refactors.
 - Commit messages: short, imperative (`Add X`, `Fix Y`).
 - Don't commit `node_modules/`, tarballs, or local test outputs.
+
+## New files: update ignore rules (mandatory)
+Whenever you create a new file in the repo, decide its fate in the same change:
+- **Ships to users?** (runtime code, docs) → add to `package.json` `files`
+  whitelist if it isn't auto-included, and verify with `npm pack --dry-run`.
+- **Local-only?** (fixtures, samples, scratch outputs, editor configs) →
+  add to `.gitignore` AND `.npmignore` so it is neither committed nor
+  published. `Test_sample_js/` is the standing example: gitignored AND
+  npmignored.
+- **Public page asset?** (`docs/*`) → committed to git, never in the npm
+  tarball (keep `.npmignore` excluding `docs/`).
+- After editing either ignore file, re-verify: `git status --short` shows
+  only intended files; `npm pack --dry-run` lists only intended tarball
+  contents.
