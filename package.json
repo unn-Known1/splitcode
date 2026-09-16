@@ -1,16 +1,20 @@
 {
   "name": "splitcode",
-  "version": "0.1.1",
-  "description": "SplitCode — split a large JavaScript file into smaller dependency-ordered files with pure static analysis. No bundler, drop-in loader.",
+  "version": "0.2.0",
+  "description": "SplitCode — split large JS, TS, HTML or Python files into smaller dependency-ordered files with pure static analysis. No bundler, drop-in loader.",
   "bin": {
     "splitcode": "split-js.js"
   },
   "files": [
     "split-js.js",
+    "lib/",
     "README.md"
   ],
   "keywords": [
     "javascript",
+    "typescript",
+    "python",
+    "html",
     "split",
     "code-splitting",
     "static-analysis",
@@ -24,6 +28,8 @@
     "url": "https://github.com/unn-Known1/splitcode.git"
   },
   "dependencies": {
-    "acorn": "^8.18.0"
+    "acorn": "^8.18.0",
+    "node-html-parser": "^9.0.4",
+    "typescript": "^5.9.3"
   }
 }

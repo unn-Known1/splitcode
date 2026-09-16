@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SplitCode — Split a Large JavaScript File Into Smaller Dependency-Ordered Files</title>
-<meta name="description" content="SplitCode splits one giant app.js into clean, load-ordered modules with pure static analysis. No bundler, no LLM. npx splitcode app.js ./out">
+<title>SplitCode — Split Large JS, TS, HTML or Python Files Into Dependency-Ordered Pieces</title>
+<meta name="description" content="SplitCode splits one giant app.js, app.ts, page or app.py into clean, load-ordered modules with pure static analysis. No bundler, no LLM. npx splitcode app.js ./out">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1120">
-<meta property="og:title" content="SplitCode — Split a Large JavaScript File Into Smaller Files">
+<meta property="og:title" content="SplitCode — Split Large JS, TS, HTML or Python Files">
 <meta property="og:description" content="Pure static analysis. Dependency-ordered output. Drop-in loader. No bundler, no LLM.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://unn-Known1.github.io/splitcode/">
@@ -126,7 +126,7 @@ footer a{color:var(--muted)}
 <div class="wrap">
 <header class="hero">
   <h1>Split one giant <span>app.js</span> into clean, load-ordered modules.</h1>
-  <p>Pure static analysis — no bundler, no LLM, no config. Grouped by real dependencies, ordered so nothing runs too early, with a drop-in loader so your pages keep working.</p>
+  <p>Pure static analysis — no bundler, no LLM, no config. JS, TypeScript, HTML inline scripts and Python. Grouped by real dependencies, ordered so nothing runs too early, with a drop-in loader so your pages keep working.</p>
   <div><span class="install"><span class="dollar">$</span>&nbsp;<span id="installCmd">npx splitcode app.js ./split-out</span>&nbsp;<button class="copyBtn" data-copy="npx splitcode app.js ./split-out">copy</button></span></div>
   <p style="font-size:.85rem;margin-top:12px">● npm release pending — <a href="#usage">from-source instructions</a> work today.</p>
   <div class="cta">
@@ -148,7 +148,7 @@ footer a{color:var(--muted)}
     <div class="card"><div class="ico">📦</div><h3>Break up monoliths</h3><p>Turn a 500KB script into focused files grouped by what actually depends on what.</p></div>
     <div class="card"><div class="ico">🔗</div><h3>Correct load order</h3><p>Immediate references enforce ordering; deferred callbacks don't — no false cycles.</p></div>
     <div class="card"><div class="ico">🚀</div><h3>Drop-in loader</h3><p>Generated <code>app.js</code> pulls in every file in order. Change nothing else.</p></div>
-    <div class="card"><div class="ico">🧠</div><h3>Scope-aware analysis</h3><p>IIFEs, block scoping, <code>window.x</code> globals and Promise executors handled correctly.</p></div>
+    <div class="card"><div class="ico">🧠</div><h3>Scope-aware analysis</h3><p>IIFEs, block scoping, <code>window.x</code> globals, decorators and Promise executors handled correctly — in JS, TS and Python.</p></div>
     <div class="card"><div class="ico">🔍</div><h3>Honest manifest</h3><p>Hubs, duplicates, cycles and parser mode reported — see how cleanly you decomposed.</p></div>
     <div class="card"><div class="ico">⚡</div><h3>Zero config</h3><p>One dependency (<code>acorn</code>), one command. ≈16KB install.</p></div>
   </div>
@@ -245,7 +245,7 @@ footer a{color:var(--muted)}
   tio.observe(term);
   // ---- usage tabs ----
   var tabs={
-    npx:'$ npx splitcode app.js ./split-out\n# flags (all optional, defaults shown):\n# [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]',
+    npx:'$ npx splitcode app.js ./split-out\n# also: app.ts, page.html, app.py (auto-detected)\n# flags (all optional, defaults shown):\n# [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader] [--lang js|ts|html|py]',
     global:'$ npm install -g splitcode\n$ splitcode app.js ./split-out',
     source:'$ npm install acorn\n$ node split-js.js app.js ./split-out',
     manifest:'{\n  "order": [{ "file": "auth-token.js",\n              "declares": ["authToken", "init", …],\n              "statementCount": 51 }, …],\n  "loader": "app.js",\n  "cycleFallback": false,\n  "verified": "syntax-only"\n}'

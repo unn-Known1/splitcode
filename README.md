@@ -1,17 +1,17 @@
-# SplitCode — Split a Large JavaScript File Into Smaller Dependency-Ordered Files
+# SplitCode — Split Large JS, TS, HTML or Python Files Into Dependency-Ordered Pieces
 
 [![npm (coming soon)](https://img.shields.io/badge/npm-coming_soon-blue)](https://www.npmjs.com/package/splitcode)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/unn-Known1/splitcode/blob/master/LICENSE)
 
-Split one giant `app.js` into clean, load-ordered modules using pure static
-analysis — no bundler, no LLM, no config. SplitCode parses your JavaScript,
-finds real dependencies between top-level statements, groups coupled code
-together, and emits a **drop-in bootstrap loader**, so your existing
-`<script>` tags keep working unchanged.
+Split one giant `app.js` / `app.ts` / page / `app.py` into clean,
+load-ordered modules using pure static analysis — no bundler, no LLM, no
+config. SplitCode parses your code, finds real dependencies between
+top-level statements, groups coupled code together, and emits a **drop-in
+bootstrap loader**, so existing entry points keep working unchanged.
 
-> **Keywords:** javascript splitter, split js file, break up large javascript
-> file, refactor monolithic script, js code splitting without bundler,
-> legacy javascript modularization, script dependency ordering.
+> **Keywords:** javascript splitter, split js file, typescript splitter,
+> split python file, refactor monolithic script, js code splitting without
+> bundler, legacy code modularization, script dependency ordering.
 
 ## Why SplitCode?
 
@@ -82,7 +82,8 @@ migration.
 ## Usage
 
 ```
-node split-js.js <input.js> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]
+splitcode <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader <name> | --no-loader] [--lang js|ts|html|py]
+# from source: node split-js.js <same args>
 ```
 
 | Option | Default | Meaning |
@@ -90,7 +91,35 @@ node split-js.js <input.js> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loa
 | `--hub-ratio` | `0.12` | Names referenced by more than this fraction of statements are treated as shared app state, not a clustering signal. |
 | `--min-chars` | `400` | Clusters smaller than this merge into their neighbour, avoiding a pile of one-line files. |
 | `--loader app.js` | on | Writes a bootstrap loader named `app.js` into `outDir`. Keep loading just that ONE file — it pulls in the split files in order. Load it with a plain `<script src>`, not async/defer. Rename with `--loader bootstrap.js`; a cluster that would collide gets suffixed (`app-2.js`). |
-| `--no-loader` | — | Disables the loader; paste `script-tags.html` into your page instead. |
+| `--no-loader` | — | Disables the loader; paste `script-tags.html` into your page instead (JS/TS/HTML; Python has no tags file). |
+| `--lang js\|ts\|html\|py` | auto (extension) | Force the frontend for extension-less or oddly-named inputs. |
+
+## Languages
+
+Dispatch is by file extension (override with `--lang js|ts|html|py`).
+One shared backend clusters, orders and names — each language gets a
+frontend plus its own loader.
+
+| Input | Frontend | Output | Loader |
+|---|---|---|---|
+| `.js` / `.mjs` / `.cjs` | `acorn` AST, full scope analysis | `.js` parts | `app.js` — synchronous `document.write` bootstrap, keep loading just it |
+| `.ts` / `.tsx` | `typescript@5` API (v6+/native port has no JS AST API — pinned `^5.9`) | `.ts` parts (types kept) | same mechanism, `.ts` file |
+| `.html` | pools every inline classic `<script>`; external `src` untouched | rewritten page + `.js` parts | loader tag inserted at the first inline block's position |
+| `.py` | `python3` stdlib `ast` (requires python3 on PATH) | `.py` parts | `app.py` bootstrap — `exec`s parts in order in **shared globals**, so module names behave exactly as one file |
+
+TypeScript specifics: type-position refs (`: Foo`, `implements Bar`) cluster
+but never order (erased at runtime); decorators/enum initializers/namespace
+bodies/static blocks are immediate; field initializers are deferred
+(construction time); `<Foo />` tags count as refs.
+HTML specifics: `type="module"` / non-JS blocks (ld+json) and unparseable
+blocks are left in place (warned); an external `src` script *between* inline
+blocks can't be ordered against the pool (warned as `externalInterleave`).
+Python specifics: `def`-time evaluations (decorators, defaults,
+annotations, bases) are immediate; class bodies run at creation; methods
+can't see class-scope names (real Python scoping). `__name__ ==
+"__main__"` blocks run exactly as before; caveat: `__file__` inside a part
+points at the bootstrap. Behavioral check: original vs split stdout
+diffed — identical (modulo independent-print interleaving, see limitations).
 
 ## Outputs (`outDir`)
 
@@ -138,6 +167,12 @@ node split-js.js <input.js> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loa
 
 ## Honest limitations
 
+- **Side-effect order across files.** Order is enforced only along
+  dependency edges. Two top-level statements with side effects (prints, DOM
+  writes) but no shared names may run in a different relative order after
+  splitting — demonstrated by test: independent `print` lines swapped files.
+  If exact interleaving matters, keep those statements coupled (shared name)
+  or in one file.
 - An *unknown* receiver's callback defaults to deferred (`arr.map(fn)` is
   covered; a custom `runNow(fn)` is not) — the general case is undecidable
   by syntax analysis. Keep synchronously-coupled code together or verify order.
@@ -150,7 +185,10 @@ node split-js.js <input.js> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loa
 
 ## Requirements
 
-- Node.js ≥ 16, plus `acorn` (`npm install acorn`).
+- Node.js ≥ 16.
+- JS/HTML: `acorn` + `node-html-parser` (`npm install`).
+- TS: `typescript@5` (`npm install` pulls `^5.9`; v6+/native has no JS AST API).
+- Python: `python3` on PATH (stdlib `ast` only — no pip packages).
 
 ## License
 
