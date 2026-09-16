@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SplitCode — Split a Large JavaScript File Into Smaller Dependency-Ordered Files</title>
+<meta name="description" content="SplitCode splits one giant app.js into clean, load-ordered modules with pure static analysis. No bundler, no LLM. npx splitcode app.js ./out">
+<style>
+:root{
+  --bg:#ffffff; --bg-soft:#f6f8fa; --card:#ffffff; --ink:#0f172a; --muted:#5b6472;
+  --line:#e5e9f0; --accent:#4f46e5; --accent-ink:#ffffff; --code-bg:#0f172a; --code-ink:#e2e8f0;
+  --good:#16a34a; --shadow:0 8px 30px rgba(15,23,42,.08);
+}
+[data-theme="dark"]{
+  --bg:#0b1120; --bg-soft:#0f172a; --card:#111c33; --ink:#e2e8f0; --muted:#94a3b8;
+  --line:#1e2a45; --accent:#818cf8; --accent-ink:#0b1120; --code-bg:#060b18; --code-ink:#e2e8f0;
+  --good:#4ade80; --shadow:0 8px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.6;transition:background .25s,color .25s}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1024px;margin:0 auto;padding:0 20px}
+nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:16px;height:60px}
+.logo{font-weight:800;font-size:1.15rem;letter-spacing:-.02em}
+.logo span{color:var(--accent)}
+nav .spacer{flex:1}
+nav a.nl{color:var(--muted);font-size:.95rem;margin-left:16px}
+nav a.nl:hover{color:var(--ink)}
+#themeBtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
+  padding:6px 14px;cursor:pointer;font-size:.9rem}
+#themeBtn:hover{border-color:var(--accent)}
+.hero{text-align:center;padding:72px 0 40px}
+.hero h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.12;letter-spacing:-.03em;margin:0 0 16px}
+.hero h1 span{color:var(--accent)}
+.hero p{color:var(--muted);font-size:1.15rem;max-width:640px;margin:0 auto 28px}
+.install{display:inline-flex;align-items:center;gap:10px;background:var(--code-bg);color:var(--code-ink);
+  border-radius:12px;padding:12px 14px 12px 18px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:1rem;box-shadow:var(--shadow)}
+.install .dollar{color:var(--good);user-select:none}
+.copyBtn{border:1px solid #ffffff2e;background:#ffffff14;color:var(--code-ink);border-radius:8px;
+  padding:5px 12px;cursor:pointer;font-size:.85rem;font-family:inherit}
+.copyBtn:hover{background:#ffffff2b}
+.cta{margin-top:22px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;padding:11px 24px;border-radius:10px;font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{text-decoration:none;filter:brightness(1.07)}
+.btn.ghost{border:1px solid var(--line);color:var(--ink)}
+.btn.ghost:hover{border-color:var(--accent);text-decoration:none}
+.stats{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:44px 0 8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 26px;
+  min-width:150px;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:1.7rem;letter-spacing:-.02em}
+.stat small{color:var(--muted)}
+section{padding:44px 0}
+h2{font-size:1.7rem;letter-spacing:-.02em;margin:0 0 8px;text-align:center}
+.sub{color:var(--muted);text-align:center;max-width:620px;margin:0 auto 30px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow);
+  opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s}
+.card.visible{opacity:1;transform:none}
+.card h3{margin:0 0 8px;font-size:1.05rem}
+.card p{margin:0;color:var(--muted);font-size:.95rem}
+.card .ico{font-size:1.4rem}
+.term{background:var(--code-bg);color:var(--code-ink);border-radius:14px;padding:20px 22px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92rem;
+  box-shadow:var(--shadow);min-height:220px}
+.term .ln{white-space:pre-wrap;word-break:break-all}
+.term .p{color:var(--good)}
+.term .caret{display:inline-block;width:9px;height:1.1em;background:var(--code-ink);
+  vertical-align:text-bottom;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.term .dim{color:#7d8aa3}
+.tabs{display:flex;gap:8px;justify-content:center;margin-bottom:18px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;
+  padding:7px 18px;cursor:pointer;font-size:.9rem;font-family:inherit}
+.tab.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.codeblock{background:var(--code-bg);color:var(--code-ink);border-radius:14px;padding:20px 22px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88rem;
+  overflow-x:auto;box-shadow:var(--shadow);position:relative}
+.codeblock .copyBtn{position:absolute;top:12px;right:12px}
+.codeblock pre{margin:0}
+.k{color:#c084fc}.s{color:#86efac}.n{color:#fbbf24}.c{color:#64748b}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;overflow:hidden;box-shadow:var(--shadow);font-size:.95rem}
+th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:var(--bg-soft)}
+tr:last-child td{border-bottom:none}
+td.good{color:var(--good);font-weight:600}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted);font-size:.9rem;text-align:center}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="logo" href="#" style="color:var(--ink);text-decoration:none">Split<span>Code</span></a>
+  <div class="spacer"></div>
+  <a class="nl" href="#features">Features</a>
+  <a class="nl" href="#demo">Demo</a>
+  <a class="nl" href="#usage">Usage</a>
+  <a class="nl" href="https://github.com/unn-Known1/splitcode">GitHub</a>
+  <button id="themeBtn" title="Toggle light / dark">◐ Theme</button>
+</div></nav>
+
+<div class="wrap">
+<header class="hero">
+  <h1>Split one giant <span>app.js</span> into clean, load-ordered modules.</h1>
+  <p>Pure static analysis — no bundler, no LLM, no config. Grouped by real dependencies, ordered so nothing runs too early, with a drop-in loader so your pages keep working.</p>
+  <div><span class="install"><span class="dollar">$</span>&nbsp;<span id="installCmd">npx splitcode app.js ./split-out</span>&nbsp;<button class="copyBtn" data-copy="npx splitcode app.js ./split-out">copy</button></span></div>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/unn-Known1/splitcode">★ Star on GitHub</a>
+    <a class="btn ghost" href="https://www.npmjs.com/package/splitcode">npm package</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><b><span class="count" data-to="671">0</span></b><small>statements in → out</small></div>
+    <div class="stat"><b><span class="count" data-to="18">0</span></b><small>focused files</small></div>
+    <div class="stat"><b><span class="count" data-to="0">0</span></b><small>ordering violations</small></div>
+    <div class="stat"><b><span class="count" data-to="3">0</span></b><small>files in tarball</small></div>
+  </div>
+</header>
+
+<section id="features">
+  <h2>Why SplitCode?</h2>
+  <p class="sub">Built for legacy scripts and plugin-style code that bundlers can't touch.</p>
+  <div class="grid">
+    <div class="card"><div class="ico">📦</div><h3>Break up monoliths</h3><p>Turn a 500KB script into focused files grouped by what actually depends on what.</p></div>
+    <div class="card"><div class="ico">🔗</div><h3>Correct load order</h3><p>Immediate references enforce ordering; deferred callbacks don't — no false cycles.</p></div>
+    <div class="card"><div class="ico">🚀</div><h3>Drop-in loader</h3><p>Generated <code>app.js</code> pulls in every file in order. Change nothing else.</p></div>
+    <div class="card"><div class="ico">🧠</div><h3>Scope-aware analysis</h3><p>IIFEs, block scoping, <code>window.x</code> globals and Promise executors handled correctly.</p></div>
+    <div class="card"><div class="ico">🔍</div><h3>Honest manifest</h3><p>Hubs, duplicates, cycles and parser mode reported — see how cleanly you decomposed.</p></div>
+    <div class="card"><div class="ico">⚡</div><h3>Zero config</h3><p>One dependency (<code>acorn</code>), one command. 14KB install.</p></div>
+  </div>
+</section>
+
+<section id="demo">
+  <h2>Watch it work</h2>
+  <p class="sub">Live terminal replay — exactly what you run.</p>
+  <div class="term" id="term"></div>
+</section>
+
+<section id="usage">
+  <h2>Usage</h2>
+  <p class="sub">Defaults do the right thing — flags only override.</p>
+  <div class="tabs">
+    <button class="tab active" data-tab="npx">npx</button>
+    <button class="tab" data-tab="global">global install</button>
+    <button class="tab" data-tab="source">from source</button>
+    <button class="tab" data-tab="manifest">manifest.json</button>
+  </div>
+  <div class="codeblock"><button class="copyBtn" id="tabCopy">copy</button><pre id="tabBody"></pre></div>
+  <br>
+  <table>
+    <tr><th>Before</th><th>After SplitCode</th></tr>
+    <tr><td>460KB single <code>app.js</code></td><td class="good">18 focused files + loader</td></tr>
+    <tr><td>Load order implicit, fragile</td><td class="good">Computed topological order, 0 violations</td></tr>
+    <tr><td>Duplicate declarations silent</td><td class="good">Reported in console + manifest</td></tr>
+    <tr><td>Refactoring means manual surgery</td><td class="good">One command, reproducible</td></tr>
+  </table>
+</section>
+</div>
+
+<footer>
+  SplitCode by <a href="https://github.com/unn-Known1">unn-Known1</a> · MIT ·
+  <a href="https://github.com/unn-Known1/splitcode">GitHub</a> ·
+  <a href="https://www.npmjs.com/package/splitcode">npm</a>
+</footer>
+
+<script>
+(function(){
+  // ---- theme: system default, toggle persists ----
+  var root=document.documentElement, btn=document.getElementById('themeBtn');
+  function sys(){return matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+  function apply(t){root.setAttribute('data-theme',t);btn.textContent=(t==='dark'?'◑ Light':'◐ Dark');}
+  var saved=null; try{saved=localStorage.getItem('splitcode-theme');}catch(e){}
+  apply(saved||sys());
+  btn.onclick=function(){
+    var next=root.getAttribute('data-theme')==='dark'?'light':'dark';
+    try{localStorage.setItem('splitcode-theme',next);}catch(e){}
+    apply(next);
+  };
+  // ---- copy buttons ----
+  document.querySelectorAll('[data-copy]').forEach(function(b){
+    b.onclick=function(){navigator.clipboard.writeText(b.getAttribute('data-copy'));
+      b.textContent='copied!';setTimeout(function(){b.textContent='copy';},1200);};
+  });
+  // ---- animated counters ----
+  var counted=false;
+  function counters(){
+    if(counted)return;counted=true;
+    document.querySelectorAll('.count').forEach(function(el){
+      var to=+el.getAttribute('data-to'),t0=null;
+      function step(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/900);
+        el.textContent=Math.round(to*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(step);}
+      requestAnimationFrame(step);
+    });
+  }
+  // ---- scroll reveal ----
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);counters();}
+  });},{threshold:.15});
+  document.querySelectorAll('.card').forEach(function(c){io.observe(c);});
+  // ---- terminal replay ----
+  var term=document.getElementById('term');
+  var script=[
+    ['$ npx splitcode app.js ./split-out',''],
+    ['Wrote 18 files + loader app.js to ./split-out','dim'],
+    ['Suppressed hub globals: toast','dim'],
+    ['$ ls ./split-out',''],
+    ['app.js  auth-token.js  tabs.js  api.js  …  manifest.json','dim'],
+    ['$ // pages keep loading just app.js — done.','']
+  ];
+  var li=0,ci=0,cur=null;
+  function newline(cls){cur=document.createElement('div');cur.className='ln'+(cls?' '+cls:'');term.appendChild(cur);return cur;}
+  function tick(){
+    if(li>=script.length){var c=document.createElement('span');c.className='caret';term.appendChild(c);return;}
+    var text=script[li][0],cls=script[li][1];
+    if(!cur)cur=newline(cls);
+    if(ci<=text.length){cur.innerHTML=(text.slice(0,ci)).replace(/</g,'&lt;');ci++;setTimeout(tick,cls?8:34);}
+    else{li++;ci=0;cur=null;setTimeout(tick,380);}
+  }
+  var tio=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){tio.disconnect();tick();}});},{threshold:.3});
+  tio.observe(term);
+  // ---- usage tabs ----
+  var tabs={
+    npx:'$ npx splitcode app.js ./split-out',
+    global:'$ npm install -g splitcode\n$ splitcode app.js ./split-out',
+    source:'$ npm install acorn\n$ node split-js.js app.js ./split-out',
+    manifest:'{\n  "order": [{ "file": "auth-token.js",\n              "declares": ["authToken", "init", …],\n              "statementCount": 51 }, …],\n  "loader": "app.js",\n  "cycleFallback": false,\n  "verified": "syntax-only"\n}'
+  };
+  var body=document.getElementById('tabBody'),copy=document.getElementById('tabCopy'),cur2='npx';
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+  function show(k){cur2=k;body.innerHTML=esc(tabs[k]);
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.getAttribute('data-tab')===k);});}
+  document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){show(t.getAttribute('data-tab'));};});
+  copy.onclick=function(){navigator.clipboard.writeText(tabs[cur2]);copy.textContent='copied!';
+    setTimeout(function(){copy.textContent='copy';},1200);};
+  show('npx');
+})();
+</script>
+</body>
+</html>
