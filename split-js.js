@@ -104,7 +104,7 @@ const COMMENT = { js: '//', ts: '//', html: '//', py: '#' };
 function defaultLoaderName() {
   if (lang === 'html') return inputBase.replace(/\.(html?|xhtml)$/i, '') + '.js' || 'app.js';
   let base = inputBase;
-  // Peel unknown trailing extensions (app.js.orig -> app.js), keep the real one.
+  // Peel unknown trailing extensions (app.js.original -> app.js), keep the real one.
   while (/\.[^.]+$/.test(base) && !base.endsWith(LOADER_EXT[lang])) {
     base = base.replace(/\.[^.]+$/, '');
   }
