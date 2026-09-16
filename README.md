@@ -95,3 +95,8 @@ node split-js.js <input.js> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loa
 
 MIT — do what you want, no warranty. Static analysis can miss dynamic
 edges; smoke-test split pages before shipping.
+
+## Author
+
+**unn-Known1** — ptelgm.yt@gmail.com
+([github.com/unn-Known1](https://github.com/unn-Known1))
