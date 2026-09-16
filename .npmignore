@@ -1,0 +1,7 @@
+# Safety net (package.json `files` whitelist already governs the tarball)
+Test_sample_js/
+TEST/
+node_modules/
+.gitignore
+*.log
+.DS_Store
