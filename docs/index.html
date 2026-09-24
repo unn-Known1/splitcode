@@ -147,7 +147,7 @@ footer a{color:var(--muted)}
     <div class="stat"><b><span class="count" data-to="671">0</span></b><small>statements in → out</small></div>
     <div class="stat"><b><span class="count" data-to="18">0</span></b><small>focused files</small></div>
     <div class="stat"><b><span class="count" data-to="0">0</span></b><small>ordering violations</small></div>
-    <div class="stat"><b><span class="count" data-to="4">0</span></b><small>files in tarball</small></div>
+    <div class="stat"><b><span class="count" data-to="11">0</span></b><small>files in tarball</small></div>
   </div>
 </header>
 
@@ -160,7 +160,7 @@ footer a{color:var(--muted)}
     <div class="card"><div class="ico">🚀</div><h3>Drop-in loader</h3><p>Generated <code>app.js</code> pulls in every file in order. Change nothing else.</p></div>
     <div class="card"><div class="ico">🧠</div><h3>Scope-aware analysis</h3><p>IIFEs, block scoping, <code>window.x</code> globals, decorators and Promise executors handled correctly — in JS, TS and Python.</p></div>
     <div class="card"><div class="ico">🔍</div><h3>Honest manifest + preflight</h3><p>Hubs, duplicates, cycles and parser mode reported — plus a pre-split risk scan per file type (<code>--check</code> runs it alone).</p></div>
-    <div class="card"><div class="ico">⚡</div><h3>Zero config</h3><p>One dependency (<code>acorn</code>), one command. ≈16KB install.</p></div>
+    <div class="card"><div class="ico">⚡</div><h3>Zero config</h3><p>Three tiny runtime deps (<code>acorn</code> + HTML parser; <code>typescript</code> optional, only for <code>.ts</code>). One command, honest manifest, 30-test suite.</p></div>
   </div>
 </section>
 
@@ -278,10 +278,10 @@ footer a{color:var(--muted)}
   tio.observe(term);
   // ---- usage tabs ----
   var tabs={
-    npx:'$ npx splitcode app.js ./split-out\n# also: app.ts, page.html, app.py (auto-detected)\n# flags (all optional, defaults shown):\n# [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader] [--lang js|ts|html|py] [--check]',
+    npx:'$ npx splitcode app.js ./split-out\n# also: app.ts, page.html, app.py (auto-detected)\n# flags (all optional, defaults shown):\n# [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]\n# [--loader-mode classic|inline] [--no-louvain] [--no-hubs] [--lang js|ts|html|py]\n# [--check] [--strict] [--force] [--dry-run] [--max-bytes N] [--timing] [--quiet]',
     global:'$ npm install -g splitcode\n$ splitcode app.js ./split-out',
-    source:'$ npm install acorn\n$ node split-js.js app.js ./split-out',
-    manifest:'{\n  "order": [{ "file": "auth-token.js",\n              "declares": ["authToken", "init", …],\n              "statementCount": 51 }, …],\n  "loader": "app.js",\n  "cycleFallback": false,\n  "verified": "syntax-only"\n}'
+    source:'$ npm install   # acorn + html parser (+ optional typescript@5)\n$ node split-js.js app.js ./split-out',
+    manifest:'{\n  "tool": "splitcode", "toolVersion": "0.3.0", "schemaVersion": 1,\n  "order": [{ "file": "auth-token.js",\n              "declares": ["authToken", "init", …],\n              "statementCount": 51 }, …],\n  "loader": "app.js", "loaderMode": "classic",\n  "input": { "statements": 671, "sha256": "…" },\n  "cycleFallback": false,\n  "verified": "syntax-only"\n}'
   };
   var body=document.getElementById('tabBody'),copy=document.getElementById('tabCopy'),cur2='npx';
   function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}

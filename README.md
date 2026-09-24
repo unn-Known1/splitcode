@@ -43,7 +43,7 @@ From source today (same thing — `splitcode` is just the `bin` alias for
 `split-js.js`):
 
 ```bash
-npm install acorn
+npm install   # acorn + node-html-parser (+ optional typescript@5 for .ts)
 node split-js.js app.js ./split-out
 ```
 
@@ -105,12 +105,28 @@ splitcode <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] 
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--hub-ratio` | `0.12` | Names referenced by more than this fraction of statements are treated as shared app state, not a clustering signal. |
-| `--min-chars` | `400` | Clusters smaller than this merge into their neighbour, avoiding a pile of one-line files. |
+| `--hub-ratio` | `0.12` | Names referenced by more than this fraction of statements are treated as shared app state, not a clustering signal. Floor: names used >6 times are always hubs; `--no-hubs` disables. |
+| `--min-chars` | `400` | Clusters smaller than this merge into their neighbour, avoiding a pile of one-line files. Strictly validated (non-negative integer). |
 | `--loader app.js` | on | Writes a bootstrap loader named `app.js` into `outDir`. Keep loading just that ONE file — it pulls in the split files in order. Load it with a plain `<script src>`, not async/defer. Rename with `--loader bootstrap.js`; a cluster that would collide gets suffixed (`app-2.js`). |
 | `--no-loader` | — | Disables the loader; paste `script-tags.html` into your page instead (JS/TS/HTML; Python has no tags file). |
+| `--loader-mode classic\|inline` | `classic` | `classic`: loader pulls in parts at runtime via `document.write` (ESM inputs get `type="module"` tags). `inline`: loader is self-contained — all parts concatenated in order, no runtime injection, no extra requests. |
+| `--no-louvain` | — | Skip Louvain refinement; group by connected components only (faster, more predictable). |
+| `--no-hubs` | — | Disable hub suppression entirely (`--hub-ratio 0` can NOT do this — the >6 floor makes 0 the most aggressive setting). |
 | `--lang js\|ts\|html\|py` | auto (extension) | Force the frontend for extension-less or oddly-named inputs. |
-| `--check` | — | Preflight only: scan for risk patterns, print warnings, write nothing. Exit 0 = clean, 2 = risky. |
+| `--check` | — | Preflight only: scan for risk patterns, print warnings, write nothing. Exit 0 = clean, 2 = risky. outDir not needed. |
+| `--strict` | — | Refuse to write when preflight warns (exit 2 instead of writing risky output). |
+| `--force` | — | Allow overwriting colliding files and outputting into the input's own directory. The input file itself is still never deleted. |
+| `--dry-run` | — | Plan everything, write nothing. outDir optional. |
+| `--max-bytes` | `33554432` | Refuse inputs larger than this many bytes instead of risking OOM (`0` = unlimited). |
+| `--timing` | — | Print per-phase milliseconds at the end. |
+| `--quiet` | — | Suppress info logs (warnings, errors and the final `Wrote` line still print). |
+| `--help` / `--version` | — | Print help / version, exit 0. |
+
+Exit codes: `0` = success (warnings may be present unless `--strict`),
+`1` = error, `2` = risky (warnings under `--check` or `--strict`).
+Flags may appear before or after `outDir`. The output can **replace the
+original file**: keep loading just the loader and the host app behaves
+identically (verified `syntax-only` — smoke-test split apps before shipping).
 
 ## Preflight (automatic, per file type)
 
@@ -119,8 +135,8 @@ Every run scans for constructs the splitter handles poorly and warns
 
 | Lang | ⚠ Warns | • Notes |
 |---|---|---|
-| JS | `eval`, `new Function`, dynamic `import()`, `importScripts`, `X.prototype.y =`, `Object.defineProperty`, unparseable file | getters/setters, top-level `await` |
-| TS | same as JS (via compiler API) | same as JS |
+| JS | `eval`, indirect `X.eval`, `new Function`, `setTimeout("…")` strings, dynamic `import()`, `importScripts` (bare + `X.` member form), `X.prototype.y =`, `Object.assign(X.prototype, …)`, dynamic global keys (`window[x] =`, non-literal `Object.assign(window, …)`), `Object.defineProperty`, unparseable file | getters/setters, top-level `await`, `require(…)`, bare writes to undeclared names (e.g. loop inits) |
+| TS | `eval`, indirect `X.eval`, `new Function`, `setTimeout("…")` strings, dynamic `import()`, `importScripts` (bare + member form), `X.prototype.y =`, `Object.assign(X.prototype, …)`, `Object.defineProperty` (via compiler API) | getters/setters, top-level `await`, `require(…)` |
 | HTML | `<script>` inside `<template>` (would be ACTIVATED), | `type="module"` left in place |
 | Python | `eval`/`exec` strings, `__import__`, relative imports (BREAK in parts), `from __future__` (must stay first) | `import *`, `__file__` (points at bootstrap) |
 
@@ -167,24 +183,37 @@ diffed — identical (modulo independent-print interleaving, see limitations).
   |---|---|
   | `order` | Files with `declares` + `statementCount`, in load order |
   | `loader` | Entry-point file name (`null` with `--no-loader`) |
+  | `loaderMode` | `classic` (runtime injection) or `inline` (self-contained) |
+  | `strict` | Whether `--strict` was on for this run |
+  | `tool` / `toolVersion` / `schemaVersion` | Producer identity (`splitcode`, semver, manifest schema `1`) |
+  | `input` | `{file, bytes, statements, sha256}` of the split source |
+  | `output` | `{statements, bytes}` across parts (statements must equal input) |
   | `hubNamesSuppressed` | Shared-everywhere globals excluded from grouping |
+  | `hubThreshold` | Effective use-count above which a name is a hub |
   | `cycleFallback` | Safety net only (condensation makes it unreachable); whether original-order fallback was used |
   | `sccMerged` | Circular-dependency groups merged into single files to guarantee order |
   | `parserMode` | `script`, or `module` if the ESM fallback parsed it |
-  | `duplicateDeclarations` | Repeated top-level names (refs use the first) |
+  | `duplicateDeclarations` | Repeated top-level names (callers link to every same-name declaration) |
   | `verified` | Always `"syntax-only"` — what was (and wasn't) proven |
 
 - **`script-tags.html`** — paste-in alternative to the loader.
 
 ## Hygiene (automatic)
 
-- **Stale cleanup** — reruns delete previous tool output (`*.js`,
-  `manifest.json`, `script-tags.html`) from `outDir` first, so orphaned
-  files from a different cluster count can't linger.
-- **CLI validation** — bad `--hub-ratio`/`--min-chars` values and unknown
-  flags exit with an error instead of silently becoming `NaN`.
+- **Stale cleanup** — reruns delete previous tool output (files listed in
+  the prior `manifest.json`, plus the exact names about to be written —
+  never extension globs) from `outDir` first, so orphaned files from a
+  different cluster count can't linger. Unchanged files are hash-skipped,
+  not rewritten. Foreign files are never touched; collisions refuse unless
+  `--force`. The input file itself is never deleted or overwritten (same-dir
+  output with a colliding loader name refuses — use a separate outDir).
+- **CLI validation** — bad `--hub-ratio`/`--min-chars`/`--max-bytes` values
+  and unknown flags exit with an error instead of silently becoming `NaN`.
+  Safety refusals (input overwrite, foreign-file collision) exit `1`;
+  `--strict` / `--check` report risk with exit `2`.
 - **Duplicate declarations** — legal `var`/`function` redeclarations warn on
-  console and in the manifest; references resolve to the first.
+  console and in the manifest; callers link to every same-name declaration
+  so load order stays safe (files get more coupled, never misordered).
 
 ## Proven on a real 460KB app (671 top-level statements)
 
@@ -194,7 +223,7 @@ diffed — identical (modulo independent-print interleaving, see limitations).
   pages for behavior).
 - 18 files, largest 95 statements; no load-order cycles; zero ordering
   violations; 1 hub suppressed (`toast`); 1 duplicate declaration reported
-  (`showTabEditor` — refs resolve to the first).
+  (`showTabEditor` — callers link to every same-name declaration).
 
 ## Honest limitations
 
@@ -207,8 +236,8 @@ diffed — identical (modulo independent-print interleaving, see limitations).
 - An *unknown* receiver's callback defaults to deferred (`arr.map(fn)` is
   covered; a custom `runNow(fn)` is not) — the general case is undecidable
   by syntax analysis. Keep synchronously-coupled code together or verify order.
-- Dynamic global keys (`window[x] = …`) can't be tracked statically and are
-  skipped.
+- Dynamic global keys (`window[x] = …`) can't be tracked statically —
+  detected and warned as `dynamic-global-key`, but readers stay unlinked.
 - Heavy shared mutable state genuinely merges files — the tool can't invent
   boundaries that don't exist. Check `hubNamesSuppressed` and cluster sizes.
 - `manifest.json` carries `"verified": "syntax-only"` as a reminder of what
@@ -218,7 +247,8 @@ diffed — identical (modulo independent-print interleaving, see limitations).
 
 - Node.js ≥ 16.
 - JS/HTML: `acorn` + `node-html-parser` (`npm install`).
-- TS: `typescript@5` (`npm install` pulls `^5.9`; v6+/native has no JS AST API).
+- TS: `typescript@5` (optional dependency — installed by default, skippable
+  with `npm install --omit=optional`; missing install fails with guidance).
 - Python: `python3` on PATH (stdlib `ast` only — no pip packages).
 
 ## License

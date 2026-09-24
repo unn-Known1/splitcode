@@ -3,7 +3,9 @@
 
 Usage: python3 pyfacts.py <file.py>
 Prints JSON: {"records": [{start:[line,col], end:[line,col],
-                            declared:[], free:[], immediate:[], isHoisted}]}
+                            declared:[], free:[], immediate:[], isHoisted}],
+               "mode": "script", "warns": [[code, level, message], ...]}
+(records + preflight warnings in ONE spawn — see collect_warns).
 
 Semantics mirror the JS walker:
   free       = every name referenced anywhere (clustering).
@@ -329,6 +331,44 @@ def span(source_lines, node):
     return start, [node.end_lineno, node.end_col_offset]
 
 
+def collect_warns(tree):
+    """Preflight warnings in the same pass (single python3 spawn per run).
+
+    Codes mirror lib/preflight.js PYWARN: [code, level, message].
+    """
+    warns = []
+
+    def once(code, level, message):
+        if code not in [w[0] for w in warns]:
+            warns.append([code, level, message])
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            f = node.func
+            if isinstance(f, ast.Name) and f.id in ('eval', 'exec'):
+                once('dynamic-exec', 'warn',
+                     f.id + '(...) found — dependencies inside strings are invisible.')
+            if isinstance(f, ast.Attribute) and f.attr == '__import__':
+                once('dynamic-import', 'warn',
+                     '__import__(...) found — its edge is invisible to ordering.')
+        if isinstance(node, ast.ImportFrom):
+            if node.level and node.level > 0:
+                once('relative-import', 'warn',
+                     'Relative import found — parts are exec fragments, not packages; '
+                     'relative imports BREAK in output.')
+            if any(a.name == '*' for a in node.names):
+                once('star-import', 'note',
+                     'import * found — names untrackable; uses stay unlinked.')
+        if isinstance(node, ast.ImportFrom) and node.module == '__future__':
+            once('future-import', 'warn',
+                 'from __future__ import found — it must be first in its file; '
+                 'if it lands mid-file in a part, output is a SyntaxError.')
+        if isinstance(node, ast.Name) and node.id == '__file__':
+            once('dunder-file', 'note',
+                 '__file__ found — inside parts it points at the bootstrap, not the original.')
+    return warns
+
+
 def main():
     with open(sys.argv[1], encoding='utf-8') as fh:
         source = fh.read()
@@ -351,7 +391,7 @@ def main():
             'immediate': sorted(c.immediate),
             'isHoisted': isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)),
         })
-    print(json.dumps({'records': records, 'mode': 'script'}))
+    print(json.dumps({'records': records, 'mode': 'script', 'warns': collect_warns(tree)}))
 
 
 if __name__ == '__main__':

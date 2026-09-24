@@ -20,13 +20,19 @@ node split-js.js app.js ./split-out         # from source (needs: npm install)
 
 - Dispatch by extension: `.js/.mjs/.cjs` `.ts/.tsx` `.html/.htm` `.py`
   (override: `--lang js|ts|html|py`).
-- Python needs `python3` on PATH. TypeScript uses `typescript@5`.
+- Python needs `python3` on PATH. TypeScript uses `typescript@5`
+  (optional dependency — skippable with `--omit=optional`).
 - Optional flags (defaults shown):
   `[--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]
-   [--lang js|ts|html|py] [--check]`
-- `--check`: preflight scan only (no output). Exit 0 = clean, 2 = risky.
-  Auto-runs before every split: eval/new Function/dynamic import,
-  prototype writes, template-nested scripts, relative Python imports, etc.
+   [--loader-mode classic|inline] [--no-louvain] [--no-hubs]
+   [--lang js|ts|html|py] [--check] [--strict] [--force] [--dry-run]
+   [--max-bytes 33554432] [--timing] [--quiet] [--help] [--version]`
+- `--check`: preflight scan only (no output, outDir not needed).
+  Exit 0 = clean, 2 = risky. `--strict` refuses to write on warnings
+  (exit 2). Exit 1 = error. Flags may come before or after outDir.
+  Auto-runs before every split: eval/indirect-eval/new Function/string
+  setTimeout/dynamic import/prototype writes+methods/dynamic global keys,
+  template-nested scripts, relative Python imports, etc.
 
 ## What you get in outDir
 
@@ -35,9 +41,11 @@ node split-js.js app.js ./split-out         # from source (needs: npm install)
   in order. Load with plain `<script src>`, never async/defer.
   Python gets `app.py` bootstrap (`exec` in shared globals); HTML gets a
   rewritten page with the loader tag at the first inline block.
-- `manifest.json`: `{order[{file, declares, statementCount}], language,
-  loader, hubNamesSuppressed, cycleFallback, parserMode,
-  duplicateDeclarations, notes, verified: "syntax-only"}`.
+- `manifest.json`: `{tool, toolVersion, schemaVersion, order[{file,
+  declares, statementCount}], language, loader, loaderMode, strict,
+  hubNamesSuppressed, hubThreshold, cycleFallback, parserMode,
+  duplicateDeclarations, input{file,bytes,statements,sha256},
+  output{statements,bytes}, notes, verified: "syntax-only"}`.
 - `script-tags.html` (JS/TS/HTML only): paste-in alternative to the loader.
 
 ## How it decides (so you trust it correctly)
@@ -66,12 +74,18 @@ You are refactoring a large file. Do NOT read it whole.
 
 ## Limits an agent must respect
 
-- Run `--check` first: preflight warns per file type (eval/dynamic
-  import/prototype writes, template-nested scripts, relative Python
-  imports, future imports). Exit 0 = clean, 2 = risky.
+- Run `--check` first: preflight warns per file type (eval/indirect-eval/
+  string-callback/dynamic import/prototype writes+methods/dynamic global
+  keys/`require()`, template-nested scripts, relative Python imports,
+  future imports). Exit 0 = clean, 2 = risky. `--strict` fails the run
+  on any warning instead of writing risky output.
 
 - Unknown-receiver callbacks default to deferred (may miss an edge, no warning).
-- Dynamic keys (`window[x] = ...`) untracked. Duplicates resolve to first.
+- Dynamic keys (`window[x] = ...`) untracked (warned, not linked).
+  Duplicates link callers to every same-name declaration (safe order, bigger files).
 - `__file__` in Python parts points at the bootstrap, not the original.
 - An external `<script src>` between HTML inline blocks can't be ordered.
-- Chrome may block document.write-injected scripts on very slow (2G) links.
+- Chrome may block document.write-injected scripts on very slow (2G) links
+  (`--loader-mode inline` avoids runtime injection entirely).
+- The tool never deletes/overwrites its own input or foreign files in
+  outDir (refuses unless `--force`); reruns skip byte-identical files.

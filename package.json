@@ -1,6 +1,6 @@
 {
   "name": "splitcode",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "SplitCode — split large JS, TS, HTML or Python files into smaller dependency-ordered files with pure static analysis. No bundler, drop-in loader.",
   "bin": {
     "splitcode": "split-js.js"
@@ -23,13 +23,23 @@
   ],
   "license": "MIT",
   "author": "unn-Known1 <ptelgm.yt@gmail.com>",
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "test": "node test/run.js",
+    "bench": "node test/bench.js",
+    "prepack": "node --check split-js.js && node --check lib/backend.js && node --check lib/frontend-js.js && node --check lib/frontend-ts.js && node --check lib/frontend-html.js && node --check lib/frontend-py.js && node --check lib/preflight.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/unn-Known1/splitcode.git"
   },
   "dependencies": {
     "acorn": "^8.18.0",
-    "node-html-parser": "^9.0.4",
+    "node-html-parser": "^9.0.4"
+  },
+  "optionalDependencies": {
     "typescript": "^5.9.3"
   }
 }

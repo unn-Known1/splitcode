@@ -1,15 +1,38 @@
 # AGENTS.md — instructions for AI coding agents working on SplitCode
 
 ## What this is
-SplitCode (`split-js.js`) splits one large classic-script JS file into
-smaller dependency-ordered files via pure static analysis (acorn, no LLM).
-Single-file CLI, one runtime dependency (`acorn`).
+SplitCode (`split-js.js`) splits one large source file (JS/TS/HTML inline
+scripts/Python) into smaller dependency-ordered files via pure static
+analysis (acorn / typescript API / node-html-parser / python3 stdlib `ast`,
+no LLM). Single-file CLI; runtime deps: `acorn`, `node-html-parser`,
+`typescript@5` (plus `python3` on PATH for `.py`).
 
 ## Commands
-- Install: `npm install` (only needs `acorn`)
+- Install: `npm install` (pulls `acorn` + `node-html-parser` + `typescript@5`; Python splits need `python3` on PATH)
 - Syntax check: `node --check split-js.js`
-- Run: `node split-js.js <input.js> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader app.js | --no-loader]`
+- Run: `node split-js.js <input.(js|ts|html|py)> <outDir> [--hub-ratio 0.12] [--min-chars 400] [--loader <name> | --no-loader] [--lang js|ts|html|py] [--check]`
 - Tarball check: `npm pack --dry-run` (must stay minimal — code + docs only)
+
+## Drop-in contract (prime directive)
+The goal of every change: splitting `<input>` into `outDir/` must let the
+output **replace the original file** with the host app behaving identically.
+Concretely: consumers keep loading just the loader (same name as the input
+by default), parts load in `manifest.json` order, and observable behavior
+matches the original. Per language: JS/TS → loader + parts in dependency
+order; HTML → rewritten page + loader tag at the first inline block;
+Python → `app.py` bootstrap `exec`ing parts in shared globals.
+Known contract-breakers (see README "Honest limitations" and
+PERFORMANCE-REPORT.md §7): ESM `import`/`export` through the classic loader,
+duplicate declarations (JS last-wins vs first-resolve), invisible dynamic
+edges (`eval`, member-form `window.eval` / `self.importScripts`, computed
+`window[x]`, `Object.assign` prototype writes, `require()`), reordered
+side-effect statements with no shared names, HTML external-`src` interleave
+/ `<template>` scripts, Python relative imports / `__file__` / non-UTF8
+encodings.
+Never weaken this contract silently: a change that widens the breakage set
+must add or extend a preflight `warn` code (README table +
+`docs/llms.txt`), or refuse with a friendly error / fail under `--strict` —
+never exit 0 with silently different behavior.
 
 ## Before finishing any code change
 1. `node --check split-js.js` (and any touched `lib/*.js`).
@@ -27,6 +50,21 @@ Single-file CLI, one runtime dependency (`acorn`).
    in README.
 7. New runtime file? `lib/` ships via the `files` whitelist — verify with
    `npm pack --dry-run` that it lands in the tarball (and only it does).
+8. Drop-in equivalence (behavioral, not just syntax): for every touched
+   language, compare ORIGINAL vs SPLIT execution, where SPLIT means the
+   parts run as SEPARATE scripts in `manifest.json` order in one shared
+   scope (per-file `vm.runInContext`, never one big concatenation —
+   hoisting must not cross file boundaries, and concat-passing proves
+   nothing). Minimum bar: the `dup` last-wins probe
+   (`function dup(){return 1}` / `function dup(){return 2}` /
+   `console.log(dup())` — original prints `2`) and one genuinely
+   multi-file feature split must match stdout. `node --check` alone never
+   proves the contract.
+9. Safety: splitting must never delete or overwrite its own input (outDir
+   == input dir + loader-name collision) and stale cleanup must only
+   remove files the tool itself emitted (manifest-tracked, or `--force`
+   gated) — never extension-globbed user files. Re-run the §7 S0 probes
+   after touching output/cleanup/loader code.
 
 ## Webpage sync (mandatory)
 `docs/index.html` is the public GitHub Pages landing page. **Whenever the
